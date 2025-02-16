@@ -1,3 +1,5 @@
+let currentLink = window.location.origin;
+
 const video = document.getElementById('video');
 const registerButton = document.getElementById('registerFace');
 
@@ -27,12 +29,51 @@ async function startCamera() {
       const labeledFaceDescriptors = await loadLabeledImages();
       const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
       
-      startFaceDetection(faceMatcher);
+      detectFace(faceMatcher);
     });
   } catch (err) {
     console.error('Error accessing webcam:', err);
   }
 }
+
+/* Detect only one face and match it against known faces */
+async function detectFace(faceMatcher) {
+  const canvas = faceapi.createCanvasFromMedia(video);
+  document.body.appendChild(canvas);
+
+  const displaySize = { width: video.width, height: video.height };
+  faceapi.matchDimensions(canvas, displaySize);
+
+  setInterval(async () => {
+    // Detect a single face
+    const detection = await faceapi
+      .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+
+    // Clear previous drawings
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (detection) {
+      // Resize detection to match video dimensions
+      const resizedDetections = faceapi.resizeResults([detection], displaySize);
+
+      // Draw bounding box and landmarks
+      faceapi.draw.drawDetections(canvas, resizedDetections);
+      faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+
+      // Match and draw label
+      resizedDetections.forEach((detection) => {
+        const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+        const box = detection.detection.box;
+        const drawBox = new faceapi.draw.DrawBox(box, { label: bestMatch.toString() });
+        drawBox.draw(canvas);
+      });
+    }
+  }, 100); // Run every 100ms
+}
+
 
 function startFaceDetection(faceMatcher) {
   const canvas = faceapi.createCanvasFromMedia(video);
@@ -64,14 +105,14 @@ function startFaceDetection(faceMatcher) {
 }
 
 async function loadLabeledImages() {
-  const response = await fetch('http://localhost:3000/api/faces');
+  const response = await fetch(`${currentLink}/api/faces`);
   const labels = await response.json();
 
   return Promise.all(
     labels.map(async label => {
       const descriptions = [];
       for (let i = 1; i <= 3; i++) {
-        const img = await faceapi.fetchImage(`http://localhost:3000/face_images/${label}/${i}.jpg`);
+        const img = await faceapi.fetchImage(`${currentLink}/face_images/${label}/${i}.jpg`);
         const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
         descriptions.push(detections.descriptor);
       }
@@ -111,7 +152,7 @@ registerButton.addEventListener('click', async () => {
     formData.append('name', name);
     formData.append('image', imageBlob, `${i + 1}.jpg`);
 
-    await fetch('http://localhost:3000/register-face', {
+    await fetch(`${currentLink}/register-face`, {
       method: 'POST',
       body: formData
     });
