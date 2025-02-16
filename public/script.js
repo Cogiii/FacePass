@@ -142,26 +142,48 @@ async function registerFace() {
 
   for (let i = 0; i < expressions.length; i++) {
     alert(`Expression ${i + 1}: ${expressions[i]}`);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
+    // Capture image from video and convert to Blob
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+    const imageBlob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, 'image/jpeg');
+    });
+
+    // Check if user already exists
+    const checkResponse = await fetch(`${currentLink}/api/checkUser`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+
+    const checkData = await checkResponse.json();
 
     const formData = new FormData();
     formData.append('name', name);
-    formData.append('image', imageBlob, `${i + 1}.jpg`);
+    formData.append('image', imageBlob);
 
-    try {
-      const response = await fetch(`${currentLink}/api/register`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error('Image upload failed.');
-    } catch (error) {
-      console.error('Upload error:', error);
+    if (checkData.exists) {
+        // User already exists – Upload only the face image
+        fetch(`${currentLink}/api/uploadFace`, {
+            method: 'POST',
+            body: formData
+        })
+            .then((response) => response.json())
+            .then((data) => console.log('Image uploaded:', data))
+            .catch((error) => console.error('Error uploading face:', error));
+    } else {
+        // User does NOT exist – Register and upload face
+        fetch(`${currentLink}/api/register`, {
+            method: 'POST',
+            body: formData
+        })
+            .then((response) => response.json())
+            .then((data) => console.log('User registered:', data))
+            .catch((error) => console.error('Error registering user:', error));
     }
   }
+
 
   alert(`Face registered successfully for ${name}!`);
 }
