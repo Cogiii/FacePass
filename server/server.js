@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const faceRoutes = require('./routes/faceRoutes');
-const uploadRoutes = require('./routes/uploadRoutes');
+const uploadRoutes = require('./routes/registerFaceRoutes');
 const faceApiRoute = require('./routes/faceApiRoutes');
 
 const app = express();
@@ -23,7 +23,7 @@ app.use('/models', express.static(modelsPath));
 
 // Routes
 app.use('/api/faces', faceRoutes);
-app.use('/api/upload', uploadRoutes);
+app.use('/api/register', uploadRoutes);
 app.use('/api/face-api', faceApiRoute);
 
 // Start the server

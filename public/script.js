@@ -44,7 +44,7 @@ async function detectFace(faceMatcher) {
   const displaySize = { width: video.width, height: video.height };
   faceapi.matchDimensions(canvas, displaySize);
 
-  setInterval(async () => {
+  const detectionInterval = setInterval(async () => {
     // Detect a single face
     const detection = await faceapi
       .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
@@ -61,7 +61,7 @@ async function detectFace(faceMatcher) {
 
       // Draw bounding box and landmarks
       faceapi.draw.drawDetections(canvas, resizedDetections);
-      faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+      // faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
 
       // Match and draw label
       resizedDetections.forEach((detection) => {
@@ -121,9 +121,12 @@ async function loadLabeledImages() {
   );
 }
 
-// Function to capture and send images for face registration
-registerButton.addEventListener('click', async () => {
-  const name = prompt("Enter your name for registration:");
+/**
+ * 
+ * @returns 
+ */
+async function registerFace() {
+  const name = prompt('Enter your name for registration:');
   if (!name) return;
 
   const canvas = document.createElement('canvas');
@@ -132,18 +135,14 @@ registerButton.addEventListener('click', async () => {
   const ctx = canvas.getContext('2d');
 
   const expressions = [
-    "Maintain a neutral expression.",
-    "Smile for the camera!",
-    "Show a surprised expression!"
+    'Maintain a neutral expression.',
+    'Smile for the camera!',
+    'Show a surprised expression!'
   ];
-
-  // Another goal is to make the user aware of the expressions they need to make 
-  // but using face-api detection expressions
 
   for (let i = 0; i < expressions.length; i++) {
     alert(`Expression ${i + 1}: ${expressions[i]}`);
-    
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Give user time to change expression
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
@@ -152,11 +151,20 @@ registerButton.addEventListener('click', async () => {
     formData.append('name', name);
     formData.append('image', imageBlob, `${i + 1}.jpg`);
 
-    await fetch(`${currentLink}/register-face`, {
-      method: 'POST',
-      body: formData
-    });
+    try {
+      const response = await fetch(`${currentLink}/api/register`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Image upload failed.');
+    } catch (error) {
+      console.error('Upload error:', error);
+    }
   }
 
   alert(`Face registered successfully for ${name}!`);
-});
+}
+
+
+registerButton.addEventListener('click', registerFace);

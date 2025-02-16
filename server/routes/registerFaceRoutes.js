@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 const router = express.Router();
-const labeledImagesPath = path.join(__dirname, '../face_images');
+const labeledImagesPath = path.join(__dirname, '../../face_images');
 
 // Multer configuration
 const storage = multer.diskStorage({
