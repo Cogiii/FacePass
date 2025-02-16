@@ -1,6 +1,10 @@
 const video = document.getElementById('video');
 const registerButton = document.getElementById('registerFace');
 
+/* 
+Load models from the face-api.js library
+then call the startCamera function to start the webcam when the models are loaded successfully
+*/
 Promise.all([
   faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
   faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
@@ -8,6 +12,9 @@ Promise.all([
   faceapi.nets.ssdMobilenetv1.loadFromUri('/models')
 ]).then(startCamera);
 
+/*
+
+*/
 async function startCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
@@ -57,7 +64,7 @@ function startFaceDetection(faceMatcher) {
 }
 
 async function loadLabeledImages() {
-  const response = await fetch('http://localhost:3000/get-faces');
+  const response = await fetch('http://localhost:3000/api/faces');
   const labels = await response.json();
 
   return Promise.all(
