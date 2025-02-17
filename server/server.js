@@ -30,7 +30,7 @@ app.use('/models', express.static(modelsPath));
 // Routes
 app.use('/api', faceRoutes);
 app.use('/api', apiRoutes);
-app.use('/api', faceApiRoute);
+app.use('/lib', faceApiRoute);
 
 // Start the server
 app.listen(port, () => console.log(`Server running at http://localhost:${port}`));

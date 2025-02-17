@@ -26,10 +26,11 @@ async function startCamera() {
       video.width = video.videoWidth;
       video.height = video.videoHeight;
 
-      const labeledFaceDescriptors = await loadLabeledImages();
+      const labeledFaceDescriptors = await loadFaces();
       const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
       
       detectFace(faceMatcher);
+      // registerFace();
     });
   } catch (err) {
     console.error('Error accessing webcam:', err);
@@ -104,19 +105,61 @@ function startFaceDetection(faceMatcher) {
   }, 100);
 }
 
-async function loadLabeledImages() {
-  const response = await fetch(`${currentLink}/api/faces`);
-  const labels = await response.json();
+// async function loadLabeledImages() {
+//   const response = await fetch(`${currentLink}/api/faces`);
+//   const labels = await response.json();
 
+//   // create variable that get all the user id, name and faceId here and store it in variable
+//   // change the label variable into the name of the user
+
+//   return Promise.all(
+//     labels.map(async label => {
+//       const descriptions = [];
+//       for (let i = 1; i <= 3; i++) {
+//         const img = await faceapi.fetchImage(`${currentLink}/api/faces/${userId}/${userFaceId}`);
+//         const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+//         descriptions.push(detections.descriptor);
+//       }
+//       return new faceapi.LabeledFaceDescriptors(label, descriptions);
+//     })
+//   );
+// }
+
+/**
+ * LOAD ALL FACES
+ * - get user details return user_id
+ * - get user_face_id of user_face base on the user_id using map function
+ * - then, fetch the image of the return user_face_id 
+ * - then, detect the face and return the face points
+ * 
+ * @returns users face and descriptions (returning users face points)
+ */
+async function loadFaces() { 
+  const response = await fetch(`${currentLink}/api/getUsers`);
+  const users = await response.json();
+  
   return Promise.all(
-    labels.map(async label => {
+    users.map(async user => {
       const descriptions = [];
-      for (let i = 1; i <= 3; i++) {
-        const img = await faceapi.fetchImage(`${currentLink}/face_images/${label}/${i}.jpg`);
-        const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
-        descriptions.push(detections.descriptor);
-      }
-      return new faceapi.LabeledFaceDescriptors(label, descriptions);
+      const userId = user.user_id;
+      const userName = user.name;
+
+      fetch(`${currentLink}/api/getUserFaceId/${userId}`, {
+        method: 'GET'
+      })
+      .then((response) => response.json())
+      .then(async (data) => {
+        for (const user in data) {
+          const userFaceId = user.user_face_id;
+          
+          const img = await faceapi.fetchImage(`${currentLink}/api/getUserFace/${userFaceId}`);
+          const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+          descriptions.push(detections.descriptor);
+        }
+        
+        return new faceapi.LabeledFaceDescriptors(userName, descriptions);
+      })
+      .catch((error) => console.error('Error uploading face:', error));
     })
   );
 }

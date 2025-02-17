@@ -141,4 +141,79 @@ router.post('/register', upload.single('image'), async (req, res) => {
     }
 });
 
+// GET: Fetch user details
+router.get('/getUsers', async (req, res) => {
+    try {
+        const userDetails = await query(
+            'SELECT user_id, name FROM tbl_user'
+        );
+
+        if (userDetails.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json(userDetails);
+    } catch (err) {
+        console.error('Error fetching user:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/** 
+ * GET: Fetch specific face and corresponding user name
+ * Status 200: return an array of json file 
+ *   [
+ *      {
+ *         user_name: 'name',
+ *      },
+ *      ...
+ *  ]
+ * Status 404 & 500: return error message
+ */
+router.get('/getUserFaceId/:userId', async (req, res) => {
+    const { userId } = req.params;
+    
+    try {
+        const userFaceIDs = await query(
+            'SELECT user_face_id FROM user_face WHERE user_id = ?',
+            [userId]
+        );
+
+        if (userFaceIDs.length === 0) {
+            return res.status(404).json({ error: 'Face ID not found' });
+        }
+
+        res.status(200).send(userFaceIDs);
+    } catch (err) {
+        console.error('Error fetching face:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+router.get('/getUserFace/:faceId', async (req, res) => {
+    const { faceId } = req.params;
+    
+    try {
+        const userFace = await query(
+            'SELECT image FROM user_face WHERE user_face_id = ?',
+            [faceId]
+        );
+
+        if (userFace.length === 0) {
+            return res.status(404).json({ error: 'Face not found' });
+        }
+        const image = Buffer.from(userFace[0].image);
+        res.writeHead(200, {
+            'Content-Type': 'image/jpeg',
+            'Content-Length': image.length
+        });
+        res.end(image);
+
+    } catch (err) {
+        console.error('Error fetching face:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+
 module.exports = router;
