@@ -27,7 +27,7 @@ async function startCamera() {
       video.height = video.videoHeight;
 
       const labeledFaceDescriptors = await loadLabeledImages();
-      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
+      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.4);
       
       detectFace(faceMatcher);
     });
