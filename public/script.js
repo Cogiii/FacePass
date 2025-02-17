@@ -27,10 +27,11 @@ async function startCamera() {
       video.height = video.videoHeight;
 
       const labeledFaceDescriptors = await loadFaces();
+      // console.log(labeledFaceDescriptors);
       const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
       
       detectFace(faceMatcher);
-      // registerFace();
+
     });
   } catch (err) {
     console.error('Error accessing webcam:', err);
@@ -105,26 +106,6 @@ function startFaceDetection(faceMatcher) {
   }, 100);
 }
 
-// async function loadLabeledImages() {
-//   const response = await fetch(`${currentLink}/api/faces`);
-//   const labels = await response.json();
-
-//   // create variable that get all the user id, name and faceId here and store it in variable
-//   // change the label variable into the name of the user
-
-//   return Promise.all(
-//     labels.map(async label => {
-//       const descriptions = [];
-//       for (let i = 1; i <= 3; i++) {
-//         const img = await faceapi.fetchImage(`${currentLink}/api/faces/${userId}/${userFaceId}`);
-//         const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
-//         descriptions.push(detections.descriptor);
-//       }
-//       return new faceapi.LabeledFaceDescriptors(label, descriptions);
-//     })
-//   );
-// }
-
 /**
  * LOAD ALL FACES
  * - get user details return user_id
@@ -144,22 +125,39 @@ async function loadFaces() {
       const userId = user.user_id;
       const userName = user.name;
 
-      fetch(`${currentLink}/api/getUserFaceId/${userId}`, {
-        method: 'GET'
-      })
-      .then((response) => response.json())
-      .then(async (data) => {
-        for (const user in data) {
-          const userFaceId = user.user_face_id;
-          
+      try {
+        // Wait for user face IDs to be fetched
+        const faceResponse = await fetch(`${currentLink}/api/getUserFaceId/${userId}`);
+        const faceData = await faceResponse.json();
+
+        // Ensure faceData is not empty
+        if (faceData.length === 0) {
+          console.warn(`No faces found for user: ${userName}`);
+          return null; // Skip users with no faces
+        }
+
+        // Fetch face images and descriptors
+        for (const face of faceData) {
+          const userFaceId = face.user_face_id;
           const img = await faceapi.fetchImage(`${currentLink}/api/getUserFace/${userFaceId}`);
           const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
-          descriptions.push(detections.descriptor);
+
+          if (detections) {
+            descriptions.push(detections.descriptor);
+          }
         }
-        
+
+        // Ensure valid face descriptors
+        if (descriptions.length === 0) {
+          console.warn(`No valid descriptors for user: ${userName}`);
+          return null;
+        }
+
         return new faceapi.LabeledFaceDescriptors(userName, descriptions);
-      })
-      .catch((error) => console.error('Error uploading face:', error));
+      } catch (error) {
+        console.error(`Error loading face data for user ${userName}:`, error);
+        return null;
+      }
     })
   );
 }
