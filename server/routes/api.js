@@ -15,13 +15,18 @@ const connection = mysql.createConnection({
 
 connection.connect((err) => {
     if (err) {
-        console.error('Error connecting to MySQL:', err);
+        console.error('Error connecting to MySQL:');
         process.exit(1);
     }
     console.log('Connected to MySQL');
 });
 
-// Helper function: Execute MySQL query (Promise-based)
+/**
+ * Helper function: Execute MySQL query (Promise-based)
+ * @param {*} sql 
+ * @param {*} values 
+ * @returns 
+ */
 const query = (sql, values) =>
     new Promise((resolve, reject) => {
         connection.query(sql, values, (err, results) => {
@@ -30,7 +35,11 @@ const query = (sql, values) =>
         });
     });
 
-// Helper function: Insert image into user_face
+/**
+ * Helper function: Save face image to user_face table
+ * @param {*} userID 
+ * @param {*} imageBuffer 
+ */
 const saveFaceImage = async (userID, imageBuffer) => {
     await query('INSERT INTO user_face (user_id, image) VALUES (?, ?)', [
         userID,
@@ -38,11 +47,14 @@ const saveFaceImage = async (userID, imageBuffer) => {
     ]);
 };
 
-// Check if user exists
-router.post('/checkUser', async (req, res) => {
+/**
+ * POST: Check if user exists
+ * Status 200: return exists: true/false
+ * Status 500: return error message
+ */
+router.post('/checkUserExist', async (req, res) => {
     try {
         const { name } = req.body;
-        if (!name) return res.status(400).json({ error: 'Name is required' });
 
         const results = await query(
             'SELECT user_id FROM tbl_user WHERE name = ?',
@@ -55,102 +67,56 @@ router.post('/checkUser', async (req, res) => {
     }
 });
 
-// Upload face image (for existing user)
-router.post('/uploadFace', upload.single('image'), async (req, res) => {
-    try {
-        const { name } = req.body;
-        const imageBuffer = req.file?.buffer;
-
-        if (!name || !imageBuffer) {
-            return res.status(400).json({ error: 'Name and image are required' });
-        }
-
-        // Check if user exists
-        const results = await query(
-            'SELECT user_id FROM tbl_user WHERE name = ?',
-            [name]
-        );
-
-        if (results.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        await saveFaceImage(results[0].user_id, imageBuffer);
-        res.status(200).json({ message: 'Face image uploaded successfully' });
-    } catch (err) {
-        console.error('Error uploading face image:', err);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Register user and upload face image
-router.post('/register', upload.single('image'), async (req, res) => {
-    const { name } = req.body;
-    const imageBuffer = req.file?.buffer;
-
-    if (!name || !imageBuffer) {
-        return res.status(400).json({ error: 'Name and image are required' });
-    }
+/**
+ * POST: Register new user
+ * Status 200: return success message
+ * Status 500: return error message
+ */
+router.post('/register', upload.array('images', 3), async (req, res) => {
+    const { name } = req.body; // 'imagesBlob' is unnecessary here
 
     try {
-        // Check if user already exists
-        const existingUser = await query(
-            'SELECT user_id FROM tbl_user WHERE name = ?',
+        // Insert new user and get user_id
+        const userResult = await query(
+            'INSERT INTO tbl_user (name) VALUES (?)',
             [name]
         );
+        const userID = userResult.insertId;
 
-        if (existingUser.length > 0) {
-            return res.status(409).json({
-                error: 'User already exists. Please choose another name.',
-            });
+        // Save image to user_face table
+        for (let i = 0; i < req.files.length; i++) {
+            await saveFaceImage(userID, req.files[i].buffer);
         }
 
-        // Start transaction
-        connection.beginTransaction(async (err) => {
-            if (err) throw err;
-
-            try {
-                // Insert new user and get user_id
-                const userResult = await query(
-                    'INSERT INTO tbl_user (name) VALUES (?)',
-                    [name]
-                );
-                const userID = userResult.insertId;
-
-                // Save image to user_face
-                await saveFaceImage(userID, imageBuffer);
-
-                // Commit transaction
-                connection.commit((err) => {
-                    if (err) throw err;
-                    res.status(200).json({
-                        message: 'User and face image saved successfully',
-                        userID,
-                    });
-                });
-            } catch (error) {
-                connection.rollback(() => {
-                    console.error('Transaction failed:', error);
-                    res.status(500).json({ error: 'Internal server error' });
-                });
-            }
-        });
+        res.status(200).json({ message: 'User registered successfully' });
     } catch (error) {
         console.error('Error registering user:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// GET: Fetch user details
+
+/**
+ * GET: Fetch all users
+ * Status 200: return an array of json file
+ *  [
+ *     {
+ *       user_id: 'id',
+ *      name: 'name',
+ *    },
+ *   ...
+ * ]
+ * Status 404 & 500: return error message
+ */
 router.get('/getUsers', async (req, res) => {
     try {
         const userDetails = await query(
             'SELECT user_id, name FROM tbl_user'
         );
 
-        if (userDetails.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
+        // if (userDetails.length === 0) {
+        //     return res.status(404).json({ error: 'User not found' });
+        // }
 
         res.json(userDetails);
     } catch (err) {
@@ -190,6 +156,11 @@ router.get('/getUserFaceId/:userId', async (req, res) => {
     }
 });
 
+/**
+ * GET: Fetch specific face image
+ * Status 200: return image
+ * Status 404 & 500: return error message
+ */
 router.get('/getUserFace/:faceId', async (req, res) => {
     const { faceId } = req.params;
     

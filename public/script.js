@@ -28,9 +28,13 @@ async function startCamera() {
 
       const labeledFaceDescriptors = await loadFaces();
       // console.log(labeledFaceDescriptors);
-      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
+      if(labeledFaceDescriptors) {
+        const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
+        detectFace(faceMatcher);
+      } else {
+        alert('No users found! Please register a face.');
+      }
       
-      detectFace(faceMatcher);
 
     });
   } catch (err) {
@@ -76,7 +80,15 @@ async function detectFace(faceMatcher) {
   }, 100); // Run every 100ms
 }
 
-
+/**
+ * Starts the face detection process using the provided face matcher.
+ * This function creates a canvas element to overlay on the video feed,
+ * matches the dimensions of the canvas to the video, and sets up an interval
+ * to continuously detect faces in the video feed. Detected faces are then
+ * matched against known faces using the face matcher, and the results are
+ * drawn on the canvas.
+ * @param {faceapi.FaceMatcher} faceMatcher - The face matcher used to match detected faces against known faces.
+ */
 function startFaceDetection(faceMatcher) {
   const canvas = faceapi.createCanvasFromMedia(video);
   document.body.append(canvas);
@@ -118,6 +130,8 @@ function startFaceDetection(faceMatcher) {
 async function loadFaces() { 
   const response = await fetch(`${currentLink}/api/getUsers`);
   const users = await response.json();
+
+  if(users.length === 0) return null;
   
   return Promise.all(
     users.map(async user => {
@@ -163,12 +177,27 @@ async function loadFaces() {
 }
 
 /**
- * 
- * @returns 
+ * REGISTER FACE
+ * - get user name
+ * - check if user already exists
+ * - capture image from video and convert to Blob
+ * - append images and name to FormData
+ * - send FormData to server for registration
+ * - log response and alert user
  */
 async function registerFace() {
   const name = prompt('Enter your name for registration:');
-  if (!name) return;
+
+  // Check if user already exists
+  const checkResponse = await fetch(`${currentLink}/api/checkUserExist`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  const checkData = await checkResponse.json();
+
+  if (!name) return alert('Name cannot be empty!');
+  else if (checkData.exists) return alert('User already exists!');
 
   const canvas = document.createElement('canvas');
   canvas.width = video.videoWidth;
@@ -181,9 +210,12 @@ async function registerFace() {
     'Show a surprised expression!'
   ];
 
+  let imagesBlob = [];
+  const formData = new FormData();
+
   for (let i = 0; i < expressions.length; i++) {
     alert(`Expression ${i + 1}: ${expressions[i]}`);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Capture image from video and convert to Blob
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -191,42 +223,21 @@ async function registerFace() {
         canvas.toBlob(resolve, 'image/jpeg');
     });
 
-    // Check if user already exists
-    const checkResponse = await fetch(`${currentLink}/api/checkUser`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-    });
-
-    const checkData = await checkResponse.json();
-
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('image', imageBlob);
-
-    if (checkData.exists) {
-        // User already exists – Upload only the face image
-        fetch(`${currentLink}/api/uploadFace`, {
-            method: 'POST',
-            body: formData
-        })
-            .then((response) => response.json())
-            .then((data) => console.log('Image uploaded:', data))
-            .catch((error) => console.error('Error uploading face:', error));
-    } else {
-        // User does NOT exist – Register and upload face
-        fetch(`${currentLink}/api/register`, {
-            method: 'POST',
-            body: formData
-        })
-            .then((response) => response.json())
-            .then((data) => console.log('User registered:', data))
-            .catch((error) => console.error('Error registering user:', error));
-    }
+    formData.append('images', imageBlob, `image${i + 1}.jpg`);
   }
 
+  formData.append('name', name);
 
-  alert(`Face registered successfully for ${name}!`);
+  fetch(`${currentLink}/api/register`, {
+    method: 'POST',
+    body: formData
+  })
+  .then((response) => response.json())
+  .then((data) => {
+    alert(`Face registered successfully for ${name}!`);
+    console.log('User Registered:', data)
+  })
+  .catch((error) => console.error('Error uploading face:', error));
 }
 
 
