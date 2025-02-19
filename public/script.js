@@ -1,7 +1,6 @@
 let currentLink = window.location.origin;
 
 const video = document.getElementById('video');
-const registerButton = document.getElementById('registerFace');
 
 /* 
 Load models from the face-api.js library
@@ -51,6 +50,8 @@ async function detectFace(faceMatcher) {
   const displaySize = { width: video.width, height: video.height };
   faceapi.matchDimensions(canvas, displaySize);
 
+  let userDetected = new Map();
+
   const detectionInterval = setInterval(async () => {
     // Detect a single face
     const detection = await faceapi
@@ -68,24 +69,48 @@ async function detectFace(faceMatcher) {
       const resizedDetections = faceapi.resizeResults([detection], displaySize);
 
       // Draw bounding box and landmarks
-      faceapi.draw.drawDetections(canvas, resizedDetections);
+      // faceapi.draw.drawDetections(canvas, resizedDetections);
       // faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
 
       // Match and draw label
-      resizedDetections.forEach((detection) => {
+      resizedDetections.forEach( async (detection) => {
         const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
         const box = detection.detection.box;
         const drawBox = new faceapi.draw.DrawBox(box, { label: bestMatch.toString() });
         drawBox.draw(canvas);
 
+        if(bestMatch.label === 'unknown') {
+          console.log('Unknown user detected!');
+        } else {
+          // Improve detection accuracy by counting the number of times a user is detected to avoid false positives
+          userDetected.set(bestMatch.label, userDetected.get(bestMatch.label) + 1 || 1);
+          if(userDetected.get(bestMatch.label) === 50) {
+            alert(`User detected: ${bestMatch.label}`);
+            console.log(`User detected: ${bestMatch.label}`);
+            
+            clearInterval(detectionInterval);
+            // clear drawbox
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          }
+        }
+
         // Display detected expressions
-        const expressions = detection.expressions;
-        const dominantExpression = Object.keys(expressions).reduce((a, b) => expressions[a] > expressions[b] ? a : b);
-        // ctx.fillText(`Expression: ${dominantExpression}`, box.x, box.y - 50);
-        console.log(`Expression: ${dominantExpression}`);
+        // const expression = detectExpression(detection);
+        // console.log(expression);
       });
     }
   }, 100); // Run every 100ms
+}
+
+/**
+ * Detect user expression based on the detected face
+ * @param {*} detection 
+ * @returns The dominant expression detected in the face detection result.
+ */
+function detectExpression(detection) {
+  const expressions = detection.expressions;
+  const dominantExpression = Object.keys(expressions).reduce((a, b) => expressions[a] > expressions[b] ? a : b);
+  return dominantExpression;
 }
 
 /**
@@ -183,70 +208,3 @@ async function loadFaces() {
     })
   );
 }
-
-/**
- * REGISTER FACE
- * - get user name
- * - check if user already exists
- * - capture image from video and convert to Blob
- * - append images and name to FormData
- * - send FormData to server for registration
- * - log response and alert user
- */
-async function registerFace() {
-  const name = prompt('Enter your name for registration:');
-
-  // Check if user already exists
-  const checkResponse = await fetch(`${currentLink}/api/checkUserExist`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name })
-  });
-  const checkData = await checkResponse.json();
-
-  if (!name) return alert('Name cannot be empty!');
-  else if (checkData.exists) return alert('User already exists!');
-
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-
-  const expressions = [
-    'Maintain a neutral expression.',
-    'Smile for the camera!',
-    'Show a surprised expression!'
-  ];
-
-  let imagesBlob = [];
-  const formData = new FormData();
-
-  for (let i = 0; i < expressions.length; i++) {
-    alert(`Expression ${i + 1}: ${expressions[i]}`);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Capture image from video and convert to Blob
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageBlob = await new Promise((resolve) => {
-        canvas.toBlob(resolve, 'image/jpeg');
-    });
-
-    formData.append('images', imageBlob, `image${i + 1}.jpg`);
-  }
-
-  formData.append('name', name);
-
-  fetch(`${currentLink}/api/register`, {
-    method: 'POST',
-    body: formData
-  })
-  .then((response) => response.json())
-  .then((data) => {
-    alert(`Face registered successfully for ${name}!`);
-    console.log('User Registered:', data)
-  })
-  .catch((error) => console.error('Error uploading face:', error));
-}
-
-
-registerButton.addEventListener('click', registerFace);
