@@ -11,7 +11,8 @@ Promise.all([
   faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
   faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
   faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-  faceapi.nets.ssdMobilenetv1.loadFromUri('/models')
+  faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+  faceapi.nets.faceExpressionNet.loadFromUri('/models')
 ]).then(startCamera);
 
 /*
@@ -55,7 +56,8 @@ async function detectFace(faceMatcher) {
     const detection = await faceapi
       .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
       .withFaceLandmarks()
-      .withFaceDescriptor();
+      .withFaceDescriptor()
+      .withFaceExpressions();
 
     // Clear previous drawings
     const ctx = canvas.getContext('2d');
@@ -75,6 +77,12 @@ async function detectFace(faceMatcher) {
         const box = detection.detection.box;
         const drawBox = new faceapi.draw.DrawBox(box, { label: bestMatch.toString() });
         drawBox.draw(canvas);
+
+        // Display detected expressions
+        const expressions = detection.expressions;
+        const dominantExpression = Object.keys(expressions).reduce((a, b) => expressions[a] > expressions[b] ? a : b);
+        // ctx.fillText(`Expression: ${dominantExpression}`, box.x, box.y - 50);
+        console.log(`Expression: ${dominantExpression}`);
       });
     }
   }, 100); // Run every 100ms
