@@ -25,7 +25,7 @@ async function startCamera() {
     video.addEventListener('loadedmetadata', async () => {
       video.width = video.videoWidth;
       video.height = video.videoHeight;
-
+      
       const labeledFaceDescriptors = await loadFaces();
       // console.log(labeledFaceDescriptors);
       if(labeledFaceDescriptors) {
