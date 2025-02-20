@@ -13,9 +13,18 @@
   <title>Face Recognition</title>
 </head>
 <body>
+
+    <h1>Face Recognition</h1>
+
+    <span id="detectingTxt">Detecting Please Wait<span id="dots"></span></span>
+    <span id="LoadingTxt">Loading Please Wait</span>
+    <span id="userDetectedTxt"></span>
+
+    <div class="video-wrapper" id="videoWrapper">
+        <video id="video" autoplay muted></video>
+    </div>
     
-  <video id="video" autoplay muted></video>
-  <button>Recognize Face</button>
+    <button id="recognizeBtn">Recognize Face</button>
 
 </body>
 </html>

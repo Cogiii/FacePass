@@ -1,6 +1,25 @@
 let currentLink = window.location.origin;
 
 const video = document.getElementById('video');
+const recognizeBtn = document.getElementById('recognizeBtn');
+const detectingTxt = document.getElementById('detectingTxt');
+const userDetectedTxt = document.getElementById('userDetectedTxt');
+
+recognizeBtn.addEventListener('click', async () => {
+    // Show loading animation & detecting text
+    videoWrapper.classList.add('loading');
+    detectingTxt.style.display = 'inline';
+    userDetectedTxt.style.display = 'none';
+
+    const labeledFaceDescriptors = await loadFaces();
+    // console.log(labeledFaceDescriptors);
+    if(labeledFaceDescriptors) {
+      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
+      detectFace(faceMatcher);
+    } else {
+      alert('No users found! Please register a face.');
+    }
+});
 
 /* 
 Load models from the face-api.js library
@@ -26,15 +45,7 @@ async function startCamera() {
       video.width = video.videoWidth;
       video.height = video.videoHeight;
       
-      const labeledFaceDescriptors = await loadFaces();
-      // console.log(labeledFaceDescriptors);
-      if(labeledFaceDescriptors) {
-        const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
-        detectFace(faceMatcher);
-      } else {
-        alert('No users found! Please register a face.');
-      }
-      
+      document.getElementById('LoadingTxt').style.display = 'none';
 
     });
   } catch (err) {
@@ -79,17 +90,27 @@ async function detectFace(faceMatcher) {
         const drawBox = new faceapi.draw.DrawBox(box, { label: bestMatch.toString() });
         // drawBox.draw(canvas);
 
-        // Improve detection accuracy by counting the number of times a user is detected to avoid false positives
+        // Improve detection accuracy by counting the number (50) of times a user is detected to avoid false positives
         userDetected.set(bestMatch.label, userDetected.get(bestMatch.label) + 1 || 1);
-        if(userDetected.get(bestMatch.label) === 50) {
-            alert(`User detected: ${bestMatch.label}`);
+        if(userDetected.get(bestMatch.label) === 30) {
+            videoWrapper.classList.remove('loading');
+            detectingTxt.style.display = 'none';
+
+            userDetectedTxt.textContent = `User detected: ${bestMatch.label}`;
+            userDetectedTxt.style.display = 'block';
+
             console.log(`User detected: ${bestMatch.label}`);
 
             clearInterval(detectionInterval);
-        } else if (userDetected.get('unknown') === 100) {
-            alert('Unknown user detected! Please register');
-            console.log('Unknown user detected!');
+        } else if (userDetected.get('unknown') === 50) {
+            videoWrapper.classList.remove('loading');
+            detectingTxt.style.display = 'none';
             
+            userDetectedTxt.textContent = `Unknown user detected! Please register`;
+            userDetectedTxt.style.display = 'block';
+
+            console.log('Unknown user detected!');
+
             clearInterval(detectionInterval);
         }
 
