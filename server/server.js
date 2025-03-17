@@ -3,7 +3,6 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 
-const faceRoutes = require('./routes/faceRoutes');
 const apiRoutes = require('./routes/api');
 const faceApiRoute = require('./routes/faceApiRoutes');
 
@@ -24,11 +23,10 @@ const faceImagesPath = path.join(__dirname, '../face_images');
 app.use('/face_images', express.static(faceImagesPath));
 
 // Serve the models folder
-const modelsPath = path.join(__dirname, '../models');
+const modelsPath = path.join(__dirname, './models');
 app.use('/models', express.static(modelsPath));
 
 // Routes
-app.use('/api', faceRoutes);
 app.use('/api', apiRoutes);
 app.use('/lib', faceApiRoute);
 

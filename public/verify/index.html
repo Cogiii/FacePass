@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+  <link rel="stylesheet" href="style.css">
+
+  <script defer src="/lib/face-api"></script>
+  <script defer src="script.js"></script>
+
+  <title>Face Recognition</title>
+</head>
+<body>
+
+    <h1>Face Recognition</h1>
+
+    <span id="detectingTxt">Detecting Please Wait<span id="dots"></span></span>
+    <span id="LoadingTxt">Loading Please Wait</span>
+    <span id="userDetectedTxt"></span>
+
+    <div class="video-wrapper" id="videoWrapper">
+        <video id="video" autoplay muted></video>
+    </div>
+    
+    <button id="recognizeBtn">Recognize Face</button>
+
+</body>
+</html>

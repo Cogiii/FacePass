@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <script defer src="/lib/face-api"></script>
+    <script defer src="script.js"></script>
+    <title>Register Face</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Face Registration</h1>
+
+        <div class="form">
+            <input type="text" id="name" placeholder="Enter your name">
+
+            <div class="videoContainer">
+                <video id="video" autoplay muted></video>
+            </div>
+        </div>
+        
+        <button class="registerBtn" id="register">Register Face</button>
+    </div>
+</body>
+</html>

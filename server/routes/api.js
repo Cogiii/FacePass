@@ -69,6 +69,7 @@ router.post('/checkUserExist', async (req, res) => {
 
 /**
  * POST: Register new user
+ *  - update the 2nd parameter of upload.array base on the length of images (expressions) needed
  * Status 200: return success message
  * Status 500: return error message
  */

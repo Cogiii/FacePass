@@ -4,41 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <script defer src="http://localhost:3000/lib/face-api"></script>
   <script defer src="script.js"></script>
   <title>Face Recognition</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      background: #000;
-    }
-    video {
-      border: 2px solid white;
-      width: 640px;
-      height: 480px;
-    }
-    canvas {
-      position: absolute;
-      top: 80px;
-    }
-    button {
-      margin-top: 10px;
-      padding: 10px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-  </style>
 </head>
 <body>
-  <video id="video" autoplay muted></video>
-  <button id="registerFace">Register Face</button>
-
+  <a href="/verify">Verify Face</a>
+  <a href="/register">Register Face</a>
 </body>
 </html>

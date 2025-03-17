@@ -1,0 +1,40 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    justify-self: center;
+    align-items: center;
+}
+
+.container {
+    text-align: center;
+    height: 100vh;
+}
+
+.videoContainer {
+    background-color: rgb(192, 190, 190);
+    width: 640px;
+    height: 480px;
+    margin: 20px 0;
+}
+.videoContainer > video {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+}
+
+.registerBtn {
+    margin-top: 10px;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    color: white;
+    background-color: black;
+}
+.registerBtn:hover {
+    background-color: #333;
+}
