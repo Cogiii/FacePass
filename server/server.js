@@ -23,7 +23,7 @@ const faceImagesPath = path.join(__dirname, '../face_images');
 app.use('/face_images', express.static(faceImagesPath));
 
 // Serve the models folder
-const modelsPath = path.join(__dirname, '../models');
+const modelsPath = path.join(__dirname, './models');
 app.use('/models', express.static(modelsPath));
 
 // Routes

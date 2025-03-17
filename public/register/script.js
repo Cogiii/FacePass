@@ -1,5 +1,3 @@
-let currentLink = window.location.origin;
-
 const video = document.getElementById('video');
 const registerButton = document.getElementById('register');
 
@@ -53,7 +51,7 @@ async function registerFace() {
     alert('Please remove any obstructions (e.g, glasses, hat) on your face and ensure good lighting.');
   
     // Check if user already exists
-    const checkResponse = await fetch(`${currentLink}/api/checkUserExist`, {
+    const checkResponse = await fetch(`/api/checkUserExist`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name })
@@ -110,7 +108,7 @@ async function registerFace() {
   
     formData.append('name', name);
   
-    fetch(`${currentLink}/api/register`, {
+    fetch(`/api/register`, {
       method: 'POST',
       body: formData
     })

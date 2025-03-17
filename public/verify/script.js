@@ -1,19 +1,17 @@
-let currentLink = window.location.origin;
-
 const video = document.getElementById('video');
 const recognizeBtn = document.getElementById('recognizeBtn');
 const detectingTxt = document.getElementById('detectingTxt');
 const userDetectedTxt = document.getElementById('userDetectedTxt');
 
 recognizeBtn.addEventListener('click', async () => {
-    // Show loading animation & detecting text
-    videoWrapper.classList.add('loading');
-    detectingTxt.style.display = 'inline';
-    userDetectedTxt.style.display = 'none';
-
     const labeledFaceDescriptors = await loadFaces();
     // console.log(labeledFaceDescriptors);
     if(labeledFaceDescriptors) {
+      // Show loading animation & detecting text
+      videoWrapper.classList.add('loading');
+      detectingTxt.style.display = 'inline';
+      userDetectedTxt.style.display = 'none';
+
       const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
       detectFace(faceMatcher);
     } else {
@@ -31,7 +29,6 @@ Promise.all([
   faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
   faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
   faceapi.nets.faceExpressionNet.loadFromUri('/models'),
-  faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models')
 ]).then(startCamera);
 
 /*
@@ -182,7 +179,7 @@ function startFaceDetection(faceMatcher) {
  * @returns users face and descriptions (returning users face points)
  */
 async function loadFaces() { 
-  const response = await fetch(`${currentLink}/api/getUsers`);
+  const response = await fetch(`/api/getUsers`);
   const users = await response.json();
 
   if(users.length === 0) return null;
@@ -195,7 +192,7 @@ async function loadFaces() {
 
       try {
         // Wait for user face IDs to be fetched
-        const faceResponse = await fetch(`${currentLink}/api/getUserFaceId/${userId}`);
+        const faceResponse = await fetch(`/api/getUserFaceId/${userId}`);
         const faceData = await faceResponse.json();
 
         // Ensure faceData is not empty
@@ -207,7 +204,7 @@ async function loadFaces() {
         // Fetch face images and descriptors
         for (const face of faceData) {
           const userFaceId = face.user_face_id;
-          const img = await faceapi.fetchImage(`${currentLink}/api/getUserFace/${userFaceId}`);
+          const img = await faceapi.fetchImage(`/api/getUserFace/${userFaceId}`);
           const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
 
           if (detections) {
